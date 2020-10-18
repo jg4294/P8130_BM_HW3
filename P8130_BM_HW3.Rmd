@@ -251,6 +251,8 @@ ggplot(control, aes(x = systolic_diff)) +
 
 ### Problem 2
 
+One_taied Hypothesis test:
+
 $H_0: \mu =\mu_{0} = 120$  v.s.   $H_1: \mu < 120$
 
 Where $\sigma = 15,\ \ \alpha=0.05$
@@ -259,11 +261,14 @@ $Z_{stat}=\frac{\overline{X}-\mu_0}{\sigma/\sqrt{n}}$
 
 $Z_{crit} = `qnorm(0.05)`\  \cong -1.65$
 
+Reject $H_0: if\ \ Z_{stat} < Z_{crit} $
+Fail to reject $H_0: if\ \ Z_{stat} \geq Z_{crit}$
+
 `rnorm(n = 20, mean = 120, sd = 15)`
 
 ##### (a) one random sample from the underlying (null) true distribution
 
-We find: |Z_stat| = 0.01776018 > Z_crit = -1.644854, reject H0, and conclude that the true mean of average IQ score of IVY League is less than 270. The conclusion is 1 in this one random sample case.
+We find: |Z_stat| = 0.01776018 > Z_crit = -1.644854, fail to reject H0, and conclude that the true mean of average IQ score of IVY League is 270. The conclusion is 1 in this one random sample case.
 ```{r part(2.1)}
 set.seed(88)
 sample_1 = rnorm(20,120,15)
