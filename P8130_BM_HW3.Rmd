@@ -1,21 +1,334 @@
 ---
-title: "Simple document"
-output: html_document
+title: "P8130 HW3"
+autor: JingYao Geng
+date: "10/16/2020"
+output: 
+  pdf_document:
+    latex_engine: "xelatex"
+    
 ---
 
-I'm an R Markdown document! 
+### Problem 1
 
-# Section 1
-
-Here's a **code chunk** that samples from 
-a _normal distribution_:
-
-```{r}
-samp = rnorm(100)
-length(samp)
+```{r setup, message = FALSE, warning = FALSE, echo = FALSE, collapse = TRUE}
+library(tidyverse)
+library(ggplot2)
 ```
 
-# Section 2
+```{r data_import.1}
+# data import
+exercise = read_csv(file = "./data/Exercise.csv") %>%
+  janitor::clean_names() %>%
+  select(group, systolic_pre, systolic_post) %>%
+  mutate(systolic_diff = systolic_post - systolic_pre) # difference
+```
 
-I can take the mean of the sample, too!
-The mean is `r mean(samp)`.
+##### (a) Since we are comparing the changes of Systolic BP for same patients at two different timepoints, We will employ 'Two-Sided Paired t-test' to assess whether the Systolic BP at 6 months is significantly from the baseline values for each of the groups: intervention, control. (assumptions are checked in part (c))
+
+
+*intervention group*
+
+$H_{0}: \mu_{post}-\mu_{pre}=0$ 
+
+$H_{1}: \mu_{post}-\mu_{pre}\neq 0$
+
+With a pre-specified significance level $\alpha=0.05$, the test statistics
+
+$t_{stat} = \frac{\overline{d}-0}{s_d/\sqrt{n}}$
+
+Reject $H_0$: if $|t_{stat}|>t_{n-1, 1-\alpha/2}$
+
+Fail to reject $H_0$: if $|t_{stat}|\leq t_{n-1,1-\alpha/2}$
+
+We find the following:
+
+$\overline{d}=-8.583333$
+
+$s_d = 17.1687$
+
+$n=36$
+
+$t_{stat} = \frac{\overline{d}-0}{s_d/\sqrt{n}}=\frac{-8.583333-0}{17.1687/\sqrt{36}} \cong -2.999645$
+
+t_crit = `qt(0.975,35)` = 2.030108
+
+* $|t_{stat}| > t_{35,\ \ 0.975}$
+
+* Conclusion: Reject $H_0$, and conclude that the Systolic BP at 6 month is significant different from the baseline values for the intervention group @ $\alpha=0.05$. 
+
+*control group*
+
+$H_{0}: \mu_{post}-\mu_{pre}=0$ 
+
+$H_{1}: \mu_{post}-\mu_{pre}\neq 0$
+
+With a pre-specified significance level $\alpha=0.05$, the test statistics
+
+$t_{stat} = \frac{\overline{d}-0}{s_{d}/\sqrt{n}}$
+
+Reject $H_0$: if $|t_{stat}|>t_{n-1, 1-\alpha/2}$
+
+Fail to reject $H_0$: if $|t_{stat}|\leq t_{n-1,1-\alpha/2}$
+
+We find the following:
+
+$\overline{d}=-3.333333$
+
+$s_d = 14.81312$
+
+$n=36$
+
+$t_{stat} = \frac{\overline{d}-0}{s_d/\sqrt{n}}=\frac{-3.333333-0}{14.81312/\sqrt{36}} \cong -1.350154$
+
+t_crit = `qt(0.975,35)` = 2.030108
+
+* $|t_{stat}| < t_{35,\ \ 0.975}$
+
+* Conclusion: Fail to reject $H_0$, and conclude that the Systolic BP at 6 month is not significant different from the baseline values for the control group @ $\alpha=0.05$. 
+
+```{r part(1.a)}
+## intervention group:
+intervention = exercise %>% filter(group == 1)
+mean_diff_int = mean(pull(intervention, systolic_diff)) # -8.583333
+sd_diff_int = sd(pull(intervention, systolic_diff)) #17.1687
+n_int = nrow(intervention) #36
+t_stat_int = (mean_diff_int - 0)/(sd_diff_int/sqrt(n_int)) #-2.999645
+t_crit = qt(0.975, 35) #2.030108
+## summary:
+t.test(intervention$systolic_post, intervention$systolic_pre, paired = T)
+
+## control group:
+control = exercise %>% filter(group == 0)
+mean_diff_con = mean(control$systolic_diff) # -3.333333 
+sd_diff_con = sd(control$systolic_diff) #14.81312
+n_con = nrow(control) #36
+t_stat_con = (mean_diff_con - 0)/(sd_diff_con/sqrt(n_con)) #-1.350154
+t_crit = qt(0.975, 35) #2.030108
+## summary:
+t.test(control$systolic_post, control$systolic_pre, paired = T)
+```
+
+##### (b) Since patients in the two groups are totally different, we will assess the Systolic BP absolute changes between the two groups by using an 'Two-sample Test for Independent samples' Then, the first step is to check whether the underlying variances of the two groups are equal or not. In this case, yes.
+
+Test for Equality of Variance 
+ 
+$H_{0}: \sigma_{intervention}^{2} = \sigma_{control}^{2}$ 
+
+$H_{1}: \sigma_{intervention}^{2} \neq \sigma_{control}^{2}$
+
+Compute the F test statistics and critical value:
+$F_{stat} = \frac{s_{intervention}^{2}}{s_{control}^{2}} = \frac{17.1687}{14.81312} \cong `r (sd_diff_int)^2/(sd_diff_con)^2 `$
+
+$F_{crit}$ = `qf(0.975, 35, 35)` = `r qf(0.975,35,35)`
+
+* Decision: At 0.05 significance level, because $F_{stat} < F_{crit}$, we fail to reject $H_0$ and conclude that it is safe to assume variances are equal.
+
+The pooled estimate of the variance from the two independent groups is given by:
+
+$s^2 = \frac{(n_{int}-1)s_{int}^2-(n_{con}-1)s_{con}^2}{n_{int}+n_{con}-2} = \frac{(36-1)17.1687+(36-1)14.81312}{36+36-2} \cong 257.0964$
+Where $s=\sqrt{s^2} = 16.03423$
+
+Therefore, we have the following hypothesis test:
+
+$H_{0}: \mu_{intervention} = \mu_{control}$ 
+
+$H_{1}: \mu_{intervention} \neq \mu_{control}$
+
+$t_{stat} = \frac{\bar{\mu}_{intervention}-\bar{\mu}_{intervention}}{s/\sqrt{1/n_1+1/n_2}} \sim t_{n_1+n_2-2}$ under the $H_0$
+
+$t_{stat} = \frac{(-8.583333-(-3.333333))}{16.03423/\sqrt{1/36+1/36}} \cong -1.389145$
+
+$t_{crit}$= `qt(0.975,70)`= 1.994437 > $|t_{stat}|$=1.389145
+
+* Conclusion: Fail to reject $H_0$, and conclude the difference in mean systolic blood pressure change (post-pre)is not significantly different between the intervention group and control group @ $\alpha=0.05$.
+
+95% Confidence Interval:
+
+$\overline{X}_{intervention}-\overline{X}_{control}\ \ \pm t_{n_{intervention}+n_{control}-2,\ 1-\alpha/2}\times \frac{s}{\sqrt{1/n_1+1/n_2}}$
+
+$(-8.583333-(-3.333333))\ \ \pm\ 1.995469\times \sqrt{\frac{257.0964}{2/72}}$
+
+$(-197.1255, 186.6255)$
+
+* Conclusion: we are 95% confident that the true Systolic BP absolute changes for the two groups is between -12.78758 and 2.287583.
+
+
+```{r part(1.b)}
+# variance test #
+var.test(intervention$systolic_diff, control$systolic_diff, alternative = "two.sided")
+## Alternatively:
+# F_stat
+F_stat = (sd_diff_int)^2/(sd_diff_con)^2#1.343327
+# F_crit
+F_crit = qf(0.975,35,35)#1.961089
+##################################################################################
+
+# Independent two samples test #
+t.test(intervention$systolic_diff, control$systolic_diff, var.equal = TRUE, paired = FALSE) 
+
+## Alternatively:
+# s^2, s
+s_2 = (35*sd_diff_int^2 + 35*sd_diff_con^2)/(36 + 36 - 2)#257.0964
+s = sqrt(s_2)#16.03423
+# test statistics
+(mean_diff_int - mean_diff_con)/(s*sqrt(1/36 + 1/36))# |-1.389145| --> 1.389145
+# test critical
+qt(0.975,70)#1.994437 > test statistics --> fail to reject H0
+# 95% C.I
+mean_diff_int - mean_diff_con #-5.25
+lower_bound = (mean_diff_int - mean_diff_con) - qt(0.975,70)*s*sqrt(2/36)#-12.78758
+upper_bound = (mean_diff_int - mean_diff_con) + qt(0.975,70)*s*sqrt(2/36)#2.287583
+
+```
+
+
+##### (c) What are the main underlying assumptions for the tests performed in parts a) and b)?*
+
+* By CLT if you are sampled from a underlying normal distribution, the sample mean also follows a normal distribution, and the difference if the sample means are also follows a normal distribution.
+
+* For part a), we use a paired t-test, and we assume the SBP measurements(post and pre) for both intervention and control groups are normally distributed with mean $\mu_{int_{post}}\ \ and\ \ \mu_{int_{pre}}$,  and $\mu_{con_{post}}\ \ and\ \  \mu_{con_{pre}}$, respectively. If follows that the differences $d_{i_{int}}$ ~ $N(\Delta_{int},\ \sigma_{d_{int}}^2)$, $d_{i_{con}}$ ~ $N(\Delta_{con},\  \sigma_{d_{con}}^2)$, where i=1,2,3,...n. Under the null hypothesis, the test statistics follows a $t_{n-1}$.
+
+* For part b), we consider the the two groups are independent samples, and that they are normally distributed: $X_{intervention_{\Delta}} \sim N(\mu_{int_{\Delta}}, \sigma_{int_{\Delta}}^2)$ and $X_{control_{\Delta}} \sim N(\mu_{int_{\Delta}}, \sigma_{int_{\Delta}}^2)$. And we found the underlying variances of the two samples are equal.
+
+```{r normality_part(1.c)}
+#normality_intervention_pre
+par(mfrow = c(2,2)) 
+ggplot(intervention, aes(x = systolic_pre)) +
+  geom_histogram(color = "black", fill = "pink", bins = 30) +
+  labs(
+    title = "The distribution of Systolic_pre of intervention group",
+    x = "Systolic Pre",
+    y = "Frequency"
+  )
+
+#normality_intervention_post
+ggplot(intervention, aes(x = systolic_post)) +
+  geom_histogram(color = "black", fill = "pink", bins = 30) +
+  labs(
+    title = "The distribution of Systolic_post of intervention group",
+    x = "Systolic Post",
+    y = "Frequency"
+  )
+
+#normality_control_pre 
+ggplot(control, aes(x = systolic_pre)) +
+  geom_histogram(color = "black", fill = "pink", bins = 30) +
+  labs(
+    title = "The distribution of Systolic_pre of control group",
+    x = "Systolic Pre",
+    y = "Frequency"
+  )
+#normality_control_pre
+ggplot(control, aes(x = systolic_post)) +
+  geom_histogram(color = "black", fill = "pink", bins = 30) +
+  labs(
+    title = "The distribution of Systolic_post of control group",
+    x = "Systolic Post",
+    y = "Frequency"
+  )
+
+#normality_intervention_diff
+ggplot(intervention, aes(x = systolic_diff)) +
+  geom_histogram(color = "black", fill = "pink", bins = 30) +
+  labs(
+    title = "The distribution of Systolic_diff of the intervention group",
+    x = "Systolic changes",
+    y = "Frequency"
+  )
+
+#normality_control_diff
+ggplot(control, aes(x = systolic_diff)) +
+  geom_histogram(color = "black", fill = "pink", bins = 30) +
+  labs(
+    title = "The distribution of Systolic_diff of the control group",
+    x = "Systolic changes",
+    y = "Frequency"
+  )
+```
+
+* By visualizing the above histograms, it's hard to state the assumptions of normality are valid since they do not quite look like a symmetric bell-curve. It means the tests we employed above might not be appropriate. Possible remedies to this situation would be increase the total sample sizes for both groups. Therefore, with a large sample size, the normality assumption holds approximately due to CLT.
+
+
+### Problem 2
+
+$H_0: \mu =\mu_{0} = 120$  v.s.   $H_1: \mu < 120$
+
+Where $\sigma = 15,\ \ \alpha=0.05$
+
+$Z_{stat}=\frac{\overline{X}-\mu_0}{\sigma/\sqrt{n}}$
+
+$Z_{crit} = `qnorm(0.05)`\  \cong -1.65$
+
+`rnorm(n = 20, mean = 120, sd = 15)`
+
+##### (a) one random sample from the underlying (null) true distribution
+
+We find: |Z_stat| = 0.01776018 > Z_crit = -1.644854, reject H0, and conclude that the true mean of average IQ score of IVY League is less than 270. The conclusion is 1 in this one random sample case.
+```{r part(2.1)}
+set.seed(88)
+sample_1 = rnorm(20,120,15)
+Z_stat = (mean(sample_1) - 120) / (15*sqrt(20));Z_stat
+Z_crit = qnorm(0.05);Z_crit
+```
+
+
+##### (b) 100 random samples from the underlying (null) true distribution
+We find the percentage of 1s to be 0.02, and percentage of 0s to be 0.98. Among the 100 random samples, 2% of them reject the H0, 98% of them fail to reject H0. This is what we would expect to see since they are sampled from the underlying normal distribution with alpha = 0.05. The Type I error is 2%, which is less than our default alpha = 0.05.
+```{r part(2.2)}
+set.seed(88)
+Z_stat = rep(NA, 100)
+decision = rep(NA,100)
+
+for (i in 1:100) {
+  Z_stat[i] = (mean(rnorm(20, 120, 15) - 120) / (15/sqrt(20)))
+  Z_crit = qnorm(0.05)
+  if (Z_stat[i] < Z_crit) {decision[i] = 1}
+  else(decision[i] = 0)
+  
+}
+
+reject = 0
+fail_to_reject = 0
+
+for (i in 1:100) {
+   if (decision[i] == 1) (reject = reject + 1)
+   if (decision[i] == 0) (fail_to_reject = fail_to_reject + 1)
+}
+
+percent_of_reject = reject/100; percent_of_reject 
+percent_of_fail_to_reject = fail_to_reject/100; percent_of_fail_to_reject 
+
+```
+
+
+##### (c) 1000 random samples from the underlying (null) true distribution
+We find the percentage of 1s to be 0.045, and percentage of 0s to be 0.955. Among the 100 random samples, 4.5% of them reject the H0, 95.5% of them fail to reject H0. This is what we would expect to see since they are sampled from the underlying normal distribution with alpha = 0.05. The Type I error is 4.5%, which is still less than our default alpha = 0.05. However, as we increase the number of random samples, we find the Type I error (0.045) is much more closer to the default alpha = 0.05.
+```{r part(2.3)}
+set.seed(88)
+Z_stat = rep(NA, 1000)
+decision = rep(NA,1000)
+
+for (i in 1:1000) {
+  Z_stat[i] = (mean(rnorm(20, 120, 15) - 120) / (15/sqrt(20)))
+  Z_crit = qnorm(0.05)
+  if (Z_stat[i] < Z_crit) {decision[i] = 1}
+  else(decision[i] = 0)
+  
+}
+
+reject = 0
+fail_to_reject = 0
+
+for (i in 1:1000) {
+   if (decision[i] == 1) (reject = reject + 1)
+   if (decision[i] == 0) (fail_to_reject = fail_to_reject + 1)
+}
+
+percent_of_reject = reject/1000; percent_of_reject 
+percent_of_fail_to_reject = fail_to_reject/1000; percent_of_fail_to_reject 
+```
+
+##### (d)
+In part(b), we get a Type I error of 0.06, in part (c), we get a Type I error of 0.045. As we increase the number of random samples from the underlying true distribution, we find the Type I error we calculated above are getting closer to our default setting alpha of 0.05. 
+
+
