@@ -13,6 +13,7 @@ output:
 ```{r setup, message = FALSE, warning = FALSE, echo = FALSE, collapse = TRUE}
 library(tidyverse)
 library(ggplot2)
+library(patchwork)
 ```
 
 ```{r data_import.1}
@@ -117,7 +118,7 @@ $H_{0}: \sigma_{intervention}^{2} = \sigma_{control}^{2}$
 $H_{1}: \sigma_{intervention}^{2} \neq \sigma_{control}^{2}$
 
 Compute the F test statistics and critical value:
-$F_{stat} = \frac{s_{intervention}^{2}}{s_{control}^{2}} = \frac{17.1687}{14.81312} \cong `r (sd_diff_int)^2/(sd_diff_con)^2 `$
+$F_{stat} = \frac{s_{intervention}^{2}}{s_{control}^{2}} = \frac{17.1687^2}{14.81312^2} \cong `r (sd_diff_int)^2/(sd_diff_con)^2 `$
 
 $F_{crit}$ = `qf(0.975, 35, 35)` = `r qf(0.975,35,35)`
 
@@ -190,68 +191,43 @@ upper_bound = (mean_diff_int - mean_diff_con) + qt(0.975,70)*s*sqrt(2/36)#2.2875
 
 * For part b), we consider the the two groups are independent samples, and that they are normally distributed: $X_{intervention_{\Delta}} \sim N(\mu_{int_{\Delta}}, \sigma_{int_{\Delta}}^2)$ and $X_{control_{\Delta}} \sim N(\mu_{int_{\Delta}}, \sigma_{int_{\Delta}}^2)$. And we found the underlying variances of the two samples are equal.
 
+As plotted below, the distribution of the control group looks like pretty much a normal distribution with some sort of symmetric bell-shape. The distribution of the intervention group is slightly off with more than one peaks but that's fine because t-test are pretty robust to some deviation of normality. Even if the distribution is not quite symmetric, the t-test will still generate valid results. Therefore, we don't need to doubt the normality assumption.
+
+Possible methods to reinforce the normality assumption would be increase the total sample sizes for both groups. Therefore, with a large sample size, the normality assumption holds approximately due to CLT.
+
+
 ```{r normality_part(1.c)}
-#normality_intervention_pre
-par(mfrow = c(2,2)) 
-ggplot(intervention, aes(x = systolic_pre)) +
-  geom_histogram(color = "black", fill = "pink", bins = 30) +
-  labs(
-    title = "The distribution of Systolic_pre of intervention group",
-    x = "Systolic Pre",
-    y = "Frequency"
-  )
-
-#normality_intervention_post
-ggplot(intervention, aes(x = systolic_post)) +
-  geom_histogram(color = "black", fill = "pink", bins = 30) +
-  labs(
-    title = "The distribution of Systolic_post of intervention group",
-    x = "Systolic Post",
-    y = "Frequency"
-  )
-
-#normality_control_pre 
-ggplot(control, aes(x = systolic_pre)) +
-  geom_histogram(color = "black", fill = "pink", bins = 30) +
-  labs(
-    title = "The distribution of Systolic_pre of control group",
-    x = "Systolic Pre",
-    y = "Frequency"
-  )
-#normality_control_pre
-ggplot(control, aes(x = systolic_post)) +
-  geom_histogram(color = "black", fill = "pink", bins = 30) +
-  labs(
-    title = "The distribution of Systolic_post of control group",
-    x = "Systolic Post",
-    y = "Frequency"
-  )
-
 #normality_intervention_diff
-ggplot(intervention, aes(x = systolic_diff)) +
+int_diff =
+  ggplot(intervention, aes(x = systolic_diff)) +
   geom_histogram(color = "black", fill = "pink", bins = 30) +
   labs(
-    title = "The distribution of Systolic_diff of the intervention group",
+    title = "Systolic_diff of the intervention group",
     x = "Systolic changes",
-    y = "Frequency"
+    y = "Frequency") +
+  theme(
+    plot.title = element_text(lineheight = 3, face = "bold", size = 12)
   )
 
 #normality_control_diff
-ggplot(control, aes(x = systolic_diff)) +
-  geom_histogram(color = "black", fill = "pink", bins = 30) +
+con_diff =
+  ggplot(control, aes(x = systolic_diff)) +
+  geom_histogram(color = "black", fill = "light blue", bins = 30) +
   labs(
-    title = "The distribution of Systolic_diff of the control group",
+    title = "Systolic_diff of the control group",
     x = "Systolic changes",
-    y = "Frequency"
+    y = "Frequency") +
+  theme(
+    plot.title = element_text(lineheight = 3, face = "bold", size = 12)
   )
-```
 
-* By visualizing the above histograms, it's hard to state the assumptions of normality are valid since they do not quite look like a symmetric bell-curve. It means the tests we employed above might not be appropriate. Possible remedies to this situation would be increase the total sample sizes for both groups. Therefore, with a large sample size, the normality assumption holds approximately due to CLT.
+(int_diff)/(con_diff)
+```
 
 
 ### Problem 2
 
-One_taied Hypothesis test:
+One_tailed Hypothesis test:
 
 $H_0: \mu =\mu_{0} = 120$  v.s.   $H_1: \mu < 120$
 
@@ -261,7 +237,7 @@ $Z_{stat}=\frac{\overline{X}-\mu_0}{\sigma/\sqrt{n}}$
 
 $Z_{crit} = `qnorm(0.05)`\  \cong -1.65$
 
-Reject $H_0: if\ \ Z_{stat} < Z_{crit} $
+Reject $H_0: if\ \ Z_{stat} < Z_{crit}$
 Fail to reject $H_0: if\ \ Z_{stat} \geq Z_{crit}$
 
 `rnorm(n = 20, mean = 120, sd = 15)`
@@ -334,6 +310,6 @@ percent_of_fail_to_reject = fail_to_reject/1000; percent_of_fail_to_reject
 ```
 
 ##### (d)
-In part(b), we get a Type I error of 0.06, in part (c), we get a Type I error of 0.045. As we increase the number of random samples from the underlying true distribution, we find the Type I error we calculated above are getting closer to our default setting alpha of 0.05. 
+In part(b), we get a Type I error of 0.06, in part (c), we get a Type I error of 0.045. As we increase the number of random samples from the underlying true distribution, we find the Type I error are more likely to get closer to our default setting alpha of 0.05. 
 
 
